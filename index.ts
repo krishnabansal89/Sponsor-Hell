@@ -1,25 +1,16 @@
-const express = require('express');
-import {Request , Response , NextFunction} from 'express';
+import express, { Request, Response } from "express";
+import router from "./routes";
 
-import router from './routes';
 const app = express();
 const port = process.env.PORT || 3000;
 app.use(express.json());
-app.get('/health', (req:Request, res:Response) => {
+
+app.get("/health", (_req: Request, res: Response) => {
   res.send("OK");
 });
 
+app.use("/api", router);
+
 app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
+  console.log(`Server is running on port ${port}`);
 });
-
-app.use('/api' , router);
-
-
-
-
-
-
-
-
-
