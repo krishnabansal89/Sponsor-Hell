@@ -1,58 +1,105 @@
 import { getTime, convertToTime } from "./Scrap";
+
+
+
 const Marker = (start: string, end: string) => {
-  //Getting Video MetaData
-  let videoElement = document.querySelectorAll(
-    ".video-stream.html5-main-video"
-  )[0] as HTMLElement;
-  let width_: string = videoElement.style.width.split("px")[0];
-  let height_: string = videoElement.style.height.split("px")[0];
-  let width = parseInt(width_);
-  let height = parseInt(height_);
-  console.log(width, height);
+  let markerElement: HTMLElement | null = null;
 
-  const total_time = new Date(
-    getTime(
-      document.getElementsByClassName("ytp-time-duration")[0].textContent || ""
-    )
-  );
-  let start_time, end_time;
-  if (start.length > 6) start_time = new Date(convertToTime(start));
-  else start_time = new Date(getTime(start));
-  if (end.length > 6) end_time = new Date(convertToTime(end));
-  else end_time = new Date(getTime(end));
+  const createMarker = () => {
+    const videoElement = document.querySelector(".video-stream.html5-main-video") as HTMLVideoElement;
+    if (!videoElement) return;
 
-  const left_index = (start_time.getTime() / total_time.getTime()) * width;
-  const segmentWidth =
-    (end_time.getTime() - start_time.getTime()) / total_time.getTime();
-  const element1 = document.getElementsByClassName(
-    "ytp-swatch-background-color"
-  )[0];
-  console.log(
-    `<div class="ytp-play-progress ytp-swatch-background-color" style="left: ${left_index}px; transform: scaleX(${segmentWidth}); background-color:yellow"></div>`
-  );
-  element1.insertAdjacentHTML(
-    "afterend",
-    `<div class="ytp-play-progress ytp-swatch-background-color" style="left: ${left_index}px; transform: scaleX(${segmentWidth}); background-color:yellow"></div>`
-  );
-  console.log("Marker Added");
-//   setInterval(() => {
-    Skipper(start_time, end_time);
-//   }, 1000);
+    const durationElement = document.querySelector(".ytp-time-duration");
+    if (!durationElement) return;
+
+    const total_time = new Date(getTime(durationElement.textContent || ""));
+    const start_time = new Date(start.length > 6 ? convertToTime(start) : getTime(start));
+    const end_time = new Date(end.length > 6 ? convertToTime(end) : getTime(end));
+
+    const youtube_timeline = document.querySelector(".ytp-progress-bar");
+    if (!youtube_timeline) return;
+
+    const timelineWidth = youtube_timeline.clientWidth;
+    const left_index = (start_time.getTime() / total_time.getTime()) * timelineWidth;
+    const segmentWidth = ((end_time.getTime() - start_time.getTime()) / total_time.getTime()) * timelineWidth;
+
+    if (!markerElement) {
+      markerElement = document.createElement('div');
+      markerElement.className = 'custom-marker';
+      youtube_timeline.appendChild(markerElement);
+    }
+
+    markerElement.style.cssText = `
+      position: absolute;
+      left: ${left_index}px;
+      top: 0;
+      width: ${segmentWidth}px;
+      height: 100%;
+      background-color: rgba(255, 255, 0, 0.5);
+      pointer-events: none;
+      z-index: 1000;
+    `;
+
+    console.log("Marker Updated");
+  };
+
+  // Create and update marker when player size changes
+  const resizeObserver = new ResizeObserver(() => {
+    createMarker();
+  });
+
+  // Observe the video player container
+  const playerContainer = document.querySelector("#movie_player");
+  if (playerContainer) {
+    resizeObserver.observe(playerContainer);
+  }
+
+  // Create and update marker when player mode changes
+  const mutationObserver = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+        createMarker();
+      }
+    });
+  });
+
+  // Observe the body element for class changes (which indicate mode changes)
+  mutationObserver.observe(document.body, {
+    attributes: true,
+    attributeFilter: ['class']
+  });
+
+  // Initial creation of the marker
+  createMarker();
+  Skipper(new Date(start.length > 6 ? convertToTime(start) : getTime(start)) , new Date(end.length > 6 ? convertToTime(end) : getTime(end)))
+
+  // Clean up function to remove observers when needed
+  return () => {
+    resizeObserver.disconnect();
+    mutationObserver.disconnect();
+    if (markerElement && markerElement.parentNode) {
+      markerElement.parentNode.removeChild(markerElement);
+    }
+  };
 };
+
+
 const Skipper = (start_time: Date, end_time: Date) => {
   //Skips the youtube timeline when the current video time is either in the start or end time of the Start time of the sponsored segment
   const videoElement = document.querySelectorAll(".video-stream.html5-main-video")[0] as HTMLVideoElement;
   // console.log("Skipper Running");
-  videoElement.ontimeupdate = () => {
-  const current_time = new Date(videoElement.currentTime);
-  if (
-    current_time.getTime() >= start_time.getTime() &&
-    current_time.getTime() < end_time.getTime()
-  ) {
-    videoElement.currentTime = end_time.getTime();
-  }
-}; 
+  videoElement.addEventListener("timeupdate", () => {
+    const current_time = new Date(videoElement.currentTime);
+    if (
+      current_time.getTime() >= start_time.getTime() &&
+      current_time.getTime() < end_time.getTime()
+    ) {
+      videoElement.currentTime = end_time.getTime();
+    }
+  });
  console.log("Skipper Added");
   
 };
+
+
 export { Marker, Skipper };

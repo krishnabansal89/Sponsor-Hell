@@ -63,22 +63,42 @@ const translateSubtitle = (url: string): Promise<string> => {
     });
   });
 };
-const defineSkip = async (transcript: string) => {
+const defineSkip = async (transcript: string, title: string) => {
   const chatCompletion = await groq.chat.completions.create({
     messages: [
       {
         role: "system",
-        content:
-          'Analyze the following video transcript and identify explicit instances of sponsored content, including their build-up. Return the results in JSON format, including the start and end times (in MM:SS format) and a description of the sponsored content. Strictly don\'t give any Note , additional information except json. Focus on clear, substantial promotions or product placements that are unmistakably separate from the main content, including their introductions and context-setting.\nStrict rules for identifying sponsored content:\n\nInclude segments that contain explicit sponsorship language such as "This video is sponsored by", "Thanks to [Brand] for sponsoring this video", or "Use promo code [X] for a discount".\nInclude the build-up to these explicit mentions, such as transitions like "Before we continue, I want to talk about..." or "Now, let\'s take a moment to discuss...".\nThe entire sponsored segment, including build-up, must be at least 30 seconds long to be included.\nProduct demonstrations or reviews must be clearly labeled as sponsored to be included.\nIgnore any mentions of products or services that are not explicitly identified as sponsored content.\nIf there\'s any doubt about whether a segment is sponsored, do not include it.\n\nTiming rules:\n\nThe start_time should be the moment the speaker begins transitioning to sponsored content or introducing a sponsored segment.\nThe end_time should be when the speaker clearly transitions back to non-sponsored content.\nInclude all relevant information about the sponsorship, including build-up, product information, and calls to action.\n\nExample output format:\n{\n"sponsored_segments": [\n{\n"start_time": "05:15",\n"end_time": "07:30",\n"description": "Transition to sponsored content, explicit sponsorship by [Brand], product demonstration, and discount code"\n}\n]\n}\nIf no sponsored segments meeting these criteria are found, return an empty list:\n{\n"sponsored_segments": []\n}\nTranscript:\n',
+        content: `Analyze the following video transcript and title, and identify explicit instances of sponsored content, including their build-up. Return the results in JSON format, including the start and end times (in MM:SS format) and a description of the sponsored content. Strictly don't give any Note, additional information except JSON. Focus on clear, substantial promotions or product placements that are unmistakably separate from the main content, including their introductions and context-setting.
+
+Video Title: ${title}
+
+Strict rules for identifying sponsored content:
+
+Include segments that contain explicit sponsorship language such as "This video is sponsored by", "Thanks to [Brand] for sponsoring this video", or "Use promo code [X] for a discount".
+Include the build-up to these explicit mentions, such as transitions like "Before we continue, I want to talk about..." or "Now, let's take a moment to discuss...".
+The entire sponsored segment, including build-up, must be at least 30 seconds long to be included.
+Product demonstrations or reviews must be clearly labeled as sponsored to be included.
+Ignore any mentions of products or services that are not explicitly identified as sponsored content.
+If there's any doubt about whether a segment is sponsored, do not include it.
+Timing rules:
+
+The start_time should be the moment the speaker begins transitioning to sponsored content or introducing a sponsored segment.
+The end_time should be when the speaker clearly transitions back to non-sponsored content.
+Include all relevant information about the sponsorship, including build-up, product information, and calls to action.
+Example output format: { "sponsored_segments": [ { "start_time": "05:15", "end_time": "07:30", "description": "Transition to sponsored content, explicit sponsorship by [Brand], product demonstration, and discount code" } ] }
+
+If no sponsored segments meeting these criteria are found, return an empty list: { "sponsored_segments": [] }
+
+Transcript: `,
       },
       {
         role: "user",
         content: transcript,
       },
     ],
-    model: "llama3-8b-8192",
+    model: "llama3-70b-8192",
     temperature: 0.3,
-    max_tokens: 8192,
+    max_tokens: 8000,
     top_p: 0.8,
     stream: false,
     response_format: {

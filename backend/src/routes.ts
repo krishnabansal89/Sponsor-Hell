@@ -22,6 +22,7 @@ router.post("/caption", (req: Request, res: Response) => {
       // console.log(data.length);
       // console.log(data[0]);
       console.log(data["response"]["formats"]);
+      const title = data["response"]["title"];
       if (data["response"]["formats"]) console.log(data["response"]["formats"]);
       {
         for (const item of data["response"]["formats"]) {
@@ -33,7 +34,7 @@ router.post("/caption", (req: Request, res: Response) => {
               let timeStamps: any = [];
               for (let i = 0; i < dataArr.length; i = i + 500) {
                 let temp = dataArr.slice(i, i + 500).join("\n");
-                let json_Res = await defineSkip(temp);
+                let json_Res = await defineSkip(temp, title as string);
                 timeStamps.push(json_Res);
                 timeStamps.push("\n");
               }
@@ -47,7 +48,7 @@ router.post("/caption", (req: Request, res: Response) => {
               let timeStamps: any = [];
               for (let i = 0; i < dataArr.length; i = i + 500) {
                 let temp = dataArr.slice(i, i + 500).join("\n");
-                let json_Res = await defineSkip(temp);
+                let json_Res = await defineSkip(temp, title as string);
                 timeStamps.push(json_Res);
                 timeStamps.push("\n");
               }
